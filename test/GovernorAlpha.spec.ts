@@ -46,8 +46,8 @@ describe('GovernorAlpha', () => {
   it('governor', async () => {
     const timelockAddress = await governorAlpha.timelock()
     expect(timelockAddress).to.be.eq(timelock.address)
-    const comp = await governorAlpha.comp()
-    expect(comp).to.be.eq(uni.address)
+    const uni = await governorAlpha.uni()
+    expect(uni).to.be.eq(uni.address)
     const guardian = await governorAlpha.guardian()
     expect(guardian).to.be.eq(constants.AddressZero)
   })
