@@ -37,10 +37,10 @@ export async function governanceFixture(
   const signature = 'setPendingAdmin(address)'
   const data = utils.defaultAbiCoder.encode(['address'], [governorAlpha.address])
   const { timestamp: now } = await provider.getBlock('latest')
-  const eta = now + DELAY
+  const eta = now + DELAY + 60 // give a minute margin
   await timelock.queueTransaction(target, value, signature, data, eta)
 
-  await mineBlock(provider, now + DELAY)
+  await mineBlock(provider, eta)
 
   await timelock.executeTransaction(target, value, signature, data, eta)
 
