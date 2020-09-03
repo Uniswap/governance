@@ -4,7 +4,7 @@ import { solidity, MockProvider, createFixtureLoader } from 'ethereum-waffle'
 import { ecsign } from 'ethereumjs-util'
 
 import { governanceFixture } from './fixtures'
-import { DELAY } from './utils'
+import { expandTo18Decimals } from './utils'
 
 chai.use(solidity)
 
@@ -28,7 +28,7 @@ describe('Uni', () => {
       gasLimit: 9999999,
     },
   })
-  const [wallet, other] = provider.getWallets()
+  const [wallet, other0, other1] = provider.getWallets()
   const loadFixture = createFixtureLoader([wallet], provider)
 
   let uni: Contract
@@ -46,7 +46,7 @@ describe('Uni', () => {
     )
 
     const owner = wallet.address
-    const spender = other.address
+    const spender = other0.address
     const value = 123
     const nonce = await uni.nonces(wallet.address)
     const deadline = constants.MaxUint256
@@ -73,6 +73,28 @@ describe('Uni', () => {
     expect(await uni.allowance(owner, spender)).to.eq(value)
     expect(await uni.nonces(owner)).to.eq(1)
 
-    await uni.connect(other).transferFrom(owner, spender, value)
+    await uni.connect(other0).transferFrom(owner, spender, value)
+  })
+
+  it('nested delegation', async () => {
+    await uni.transfer(other0.address, expandTo18Decimals(1))
+    await uni.transfer(other1.address, expandTo18Decimals(2))
+
+    let currectVotes0 = await uni.getCurrentVotes(other0.address)
+    let currectVotes1 = await uni.getCurrentVotes(other1.address)
+    expect(currectVotes0).to.be.eq(0)
+    expect(currectVotes1).to.be.eq(0)
+
+    await uni.connect(other0).delegate(other1.address)
+    currectVotes1 = await uni.getCurrentVotes(other1.address)
+    expect(currectVotes1).to.be.eq(expandTo18Decimals(1))
+
+    await uni.connect(other1).delegate(other1.address)
+    currectVotes1 = await uni.getCurrentVotes(other1.address)
+    expect(currectVotes1).to.be.eq(expandTo18Decimals(1).add(expandTo18Decimals(2)))
+
+    await uni.connect(other1).delegate(wallet.address)
+    currectVotes1 = await uni.getCurrentVotes(other1.address)
+    expect(currectVotes1).to.be.eq(expandTo18Decimals(1))
   })
 })
