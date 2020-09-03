@@ -37,7 +37,7 @@ describe('Uni', () => {
     uni = fixture.uni
   })
 
-  it.only('permit', async () => {
+  it('permit', async () => {
     const domainSeparator = utils.keccak256(
       utils.defaultAbiCoder.encode(
         ['bytes32', 'bytes32', 'uint256', 'address'],
