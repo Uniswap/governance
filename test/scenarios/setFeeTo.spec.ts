@@ -52,16 +52,13 @@ describe('scenario:setFeeTo', () => {
 
     // overcome votingDelay
     await mineBlock(provider, now)
-    await mineBlock(provider, now)
 
     await governorAlpha.castVote(proposalId, true)
 
     // TODO fix if possible, this is really annoying
     // overcome votingPeriod
     const votingPeriod = await governorAlpha.votingPeriod().then((votingPeriod: BigNumber) => votingPeriod.toNumber())
-    for (let i = 0; i < votingPeriod; i++) {
-      await mineBlock(provider, now)
-    }
+    await Promise.all(new Array(votingPeriod).fill(0).map(() => mineBlock(provider, now)))
 
     await governorAlpha.queue(proposalId)
 
