@@ -1,4 +1,4 @@
-import chai, { expect, util } from 'chai'
+import chai, { expect } from 'chai'
 import { Contract, BigNumber, utils } from 'ethers'
 import { solidity, MockProvider, createFixtureLoader, deployContract } from 'ethereum-waffle'
 
@@ -72,6 +72,5 @@ describe('setFeeTo', () => {
 
     const feeTo = await factory.feeTo()
     expect(feeTo).to.be.eq(timelock.address)
-    console.log('test')
   }).timeout(100000)
 })
