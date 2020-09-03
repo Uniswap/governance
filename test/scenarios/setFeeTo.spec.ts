@@ -56,6 +56,7 @@ describe('setFeeTo', () => {
 
     await governorAlpha.castVote(proposalId, true)
 
+    // TODO fix if possible, this is really annoying
     // overcome votingPeriod
     const votingPeriod = await governorAlpha.votingPeriod().then((votingPeriod: BigNumber) => votingPeriod.toNumber())
     for (let i = 0; i < votingPeriod; i++) {
