@@ -9,7 +9,7 @@ import { mineBlock, DELAY } from '../utils'
 
 chai.use(solidity)
 
-describe('setFeeTo', () => {
+describe('scenario:setFeeTo', () => {
   const provider = new MockProvider({
     ganacheOptions: {
       hardfork: 'istanbul',

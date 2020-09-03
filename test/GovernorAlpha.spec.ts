@@ -7,7 +7,7 @@ import { DELAY } from './utils'
 
 chai.use(solidity)
 
-describe('StakingRewardsFactory', () => {
+describe('GovernorAlpha', () => {
   const provider = new MockProvider({
     ganacheOptions: {
       hardfork: 'istanbul',
