@@ -1,5 +1,5 @@
 import chai, { expect } from 'chai'
-import { Contract, BigNumber, constants } from 'ethers'
+import { Contract, constants } from 'ethers'
 import { solidity, MockProvider, createFixtureLoader } from 'ethereum-waffle'
 
 import { governanceFixture } from './fixtures'

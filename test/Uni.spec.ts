@@ -1,5 +1,5 @@
 import chai, { expect } from 'chai'
-import { Contract, BigNumber, constants, utils } from 'ethers'
+import { Contract, constants, utils } from 'ethers'
 import { solidity, MockProvider, createFixtureLoader } from 'ethereum-waffle'
 import { ecsign } from 'ethereumjs-util'
 
