@@ -1,7 +1,11 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
+import "./SafeMath.sol";
+
 contract Uni {
+    using SafeMath for uint;
+
     /// @notice EIP-20 token name for this token
     string public constant name = "Uniswap";
 
@@ -11,8 +15,17 @@ contract Uni {
     /// @notice EIP-20 token decimals for this token
     uint8 public constant decimals = 18;
 
+    /// @notice Total number of tokens in circulation at the genesis of the contract
+    uint public totalSupplyGenesis = 1000000000e18; // 1 billion Uni
+
     /// @notice Total number of tokens in circulation
-    uint public totalSupply = 1000000000e18; // 1 billion Uni
+    uint public totalSupply = totalSupplyGenesis;
+
+    /// @notice Address which may mint new tokens according to a fixed schedule
+    address public minter;
+
+    /// @notice The block at which minting may begin
+    uint public mintingGenesisBlock;
 
     /// @notice Allowance amounts on behalf of others
     mapping (address => mapping (address => uint96)) internal allowances;
@@ -47,6 +60,9 @@ contract Uni {
     /// @notice A record of states for signing / validating signatures
     mapping (address => uint) public nonces;
 
+    /// @notice An event thats emitted when the minter address is changed
+    event MinterChanged(address minter, address newMinter);
+
     /// @notice An event thats emitted when an account changes its delegate
     event DelegateChanged(address indexed delegator, address indexed fromDelegate, address indexed toDelegate);
 
@@ -62,10 +78,51 @@ contract Uni {
     /**
      * @notice Construct a new Uni token
      * @param account The initial account to grant all the tokens
+     * @param minter_ The account with minting ability
+     * @param mintingGenesisBlock_ The block at which minting may begin
      */
-    constructor(address account) public {
+    constructor(address account, address minter_, uint mintingGenesisBlock_) public {
         balances[account] = uint96(totalSupply);
         emit Transfer(address(0), account, totalSupply);
+        assert(minter_ != address(0));
+        minter = minter_;
+        emit MinterChanged(address(0), minter);
+        assert(mintingGenesisBlock_ > block.number);
+        mintingGenesisBlock = mintingGenesisBlock_;
+    }
+
+    /**
+     * @notice Change the minter address
+     * @param minter_ The address of the new minter
+     */
+    function setMinter(address minter_) external {
+        require(msg.sender == minter, "Uni::setMinter: only the minter can change the minter address");
+        emit MinterChanged(minter, minter_);
+        minter = minter_;
+    }
+
+    /**
+     * @notice Mint new tokens
+     * @param dst The address of the destination account
+     */
+    function mint(address dst) external {
+        require(msg.sender == minter, "Uni::mint: only the minter can mint");
+        require(dst != address(0), "Uni::_transferTokens: cannot transfer to the zero address");
+        // Get the maximum possible value of total supply as of the last block
+        uint rawAmount = getPriorTotalSupply(block.number - 1).sub(totalSupply);
+        uint96 amount = safe96(rawAmount, "Uni::mint: amount exceeds 96 bits");
+
+        totalSupply = totalSupply.add(rawAmount);
+        balances[dst] = add96(balances[dst], amount, "Uni::mint: transfer amount overflows");
+        emit Transfer(address(0), dst, amount);
+
+        address dstRep = delegates[dst];
+        if (dstRep != address(0)) {
+            uint32 dstRepNum = numCheckpoints[dstRep];
+            uint96 dstRepOld = dstRepNum > 0 ? checkpoints[dstRep][dstRepNum - 1].votes : 0;
+            uint96 dstRepNew = add96(dstRepOld, amount, "Uni::mint: vote amount overflows");
+            _writeCheckpoint(dstRep, dstRepNum, dstRepOld, dstRepNew);
+        }
     }
 
     /**
@@ -252,7 +309,12 @@ contract Uni {
      */
     function getPriorTotalSupply(uint blockNumber) public view returns (uint) {
         require(blockNumber < block.number, "Uni::getPriorVotes: not yet determined");
-        return totalSupply;
+
+        if (blockNumber <= mintingGenesisBlock) {
+            return totalSupply;
+        } else {
+            return totalSupplyGenesis.add((blockNumber - mintingGenesisBlock).mul(5e18));
+        }
     }
 
     function _delegate(address delegator, address delegatee) internal {
