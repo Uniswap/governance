@@ -12,7 +12,7 @@ contract Uni {
     uint8 public constant decimals = 18;
 
     /// @notice Total number of tokens in circulation
-    uint public constant totalSupply = 10000000e18; // 10 million Uni
+    uint public totalSupply = 1000000000e18; // 1 billion Uni
 
     /// @notice Allowance amounts on behalf of others
     mapping (address => mapping (address => uint96)) internal allowances;
@@ -242,6 +242,17 @@ contract Uni {
             }
         }
         return checkpoints[account][lower].votes;
+    }
+
+    /**
+     * @notice Determine the maximum possible value of totalSupply as of a block number (could be lower in practice)
+     * @dev Block number must be a finalized block or else this function will revert to prevent misinformation.
+     * @param blockNumber The block number to get the vote balance at
+     * @return The maximum possible value of totalSupply as of the given block
+     */
+    function getPriorTotalSupply(uint blockNumber) public view returns (uint) {
+        require(blockNumber < block.number, "Uni::getPriorVotes: not yet determined");
+        return totalSupply;
     }
 
     function _delegate(address delegator, address delegatee) internal {
