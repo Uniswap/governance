@@ -26,9 +26,6 @@ contract GovernorAlpha {
     /// @notice The address of the Uniswap governance token
     UniInterface public uni;
 
-    /// @notice The address of the Governor Guardian
-    address public guardian;
-
     /// @notice The total number of proposals
     uint public proposalCount;
 
@@ -127,10 +124,9 @@ contract GovernorAlpha {
     /// @notice An event emitted when a proposal has been executed in the Timelock
     event ProposalExecuted(uint id);
 
-    constructor(address timelock_, address uni_, address guardian_) public {
+    constructor(address timelock_, address uni_) public {
         timelock = TimelockInterface(timelock_);
         uni = UniInterface(uni_);
-        guardian = guardian_;
     }
 
     function propose(address[] memory targets, uint[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) public returns (uint) {
@@ -276,16 +272,6 @@ contract GovernorAlpha {
         receipt.votes = votes;
 
         emit VoteCast(voter, proposalId, support, votes);
-    }
-
-    function __acceptAdmin() public {
-        require(msg.sender == guardian, "GovernorAlpha::__acceptAdmin: sender must be gov guardian");
-        timelock.acceptAdmin();
-    }
-
-    function __abdicate() public {
-        require(msg.sender == guardian, "GovernorAlpha::__abdicate: sender must be gov guardian");
-        guardian = address(0);
     }
 
     function add256(uint256 a, uint256 b) internal pure returns (uint) {

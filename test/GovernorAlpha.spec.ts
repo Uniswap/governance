@@ -48,7 +48,5 @@ describe('GovernorAlpha', () => {
     expect(timelockAddress).to.be.eq(timelock.address)
     const uniFromGovernor = await governorAlpha.uni()
     expect(uniFromGovernor).to.be.eq(uni.address)
-    const guardian = await governorAlpha.guardian()
-    expect(guardian).to.be.eq(constants.AddressZero)
   })
 })
