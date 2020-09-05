@@ -157,6 +157,16 @@ contract Uni {
         return true;
     }
 
+    /**
+     * @notice Triggers an approval from owner to spends
+     * @param owner The address to approve from
+     * @param spender The address to be approved
+     * @param rawAmount The number of tokens that are approved (2^256-1 means infinite)
+     * @param deadline The time at which to expire the signature
+     * @param v The recovery byte of the signature
+     * @param r Half of the ECDSA signature pair
+     * @param s Half of the ECDSA signature pair
+     */
     function permit(address owner, address spender, uint rawAmount, uint deadline, uint8 v, bytes32 r, bytes32 s) external {
         uint96 amount;
         if (rawAmount == uint(-1)) {
