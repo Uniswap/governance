@@ -120,7 +120,7 @@ contract Uni {
         // mint the amount
         uint96 amount = safe96(rawAmount, "Uni::mint: amount exceeds 96 bits");
         require(amount <= totalSupply.mul(growthCap).div(100), "Uni::mint: cannot exceed growth cap");
-        totalSupply = totalSupply.add(amount);
+        totalSupply = safe96(totalSupply.add(amount), "Uni::mint: totalSupply exceeds 96 bits");
         lastMint = block.timestamp;
 
         // transfer the amount to the recipient
