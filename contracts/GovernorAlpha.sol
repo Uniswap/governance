@@ -1,23 +1,15 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
-import "./SafeMath.sol";
-
 contract GovernorAlpha {
-    using SafeMath for uint;
-
     /// @notice The name of this contract
     string public constant name = "Uniswap Governor Alpha";
 
-    /// @notice The number of votes in support of a proposal required in order for a quorum to be reached and for a vote to succeed as of a block number
-    function quorumVotes(uint blockNumber) public view returns (uint) {
-        return uni.getPriorTotalSupply(blockNumber).mul(4).div(100); // 4% of Uni
-    }
+    /// @notice The number of votes in support of a proposal required in order for a quorum to be reached and for a vote to succeed
+    function quorumVotes() public pure returns (uint) { return 40000000e18; } // 40,000,000 = 4% of Uni
 
-    /// @notice The number of votes required in order for a voter to become a proposer as of a block number
-    function proposalThreshold(uint blockNumber) public view returns (uint) {
-        return uni.getPriorTotalSupply(blockNumber).div(100); // 1% of Uni
-    }
+    /// @notice The number of votes required in order for a voter to become a proposer
+    function proposalThreshold() public pure returns (uint) { return 10000000e18; } // 10,000,000 = 1% of Uni
 
     /// @notice The maximum number of actions that can be included in a proposal
     function proposalMaxOperations() public pure returns (uint) { return 10; } // 10 actions
@@ -138,7 +130,7 @@ contract GovernorAlpha {
     }
 
     function propose(address[] memory targets, uint[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) public returns (uint) {
-        require(uni.getPriorVotes(msg.sender, block.number.sub(1)) > proposalThreshold(block.number.sub(1)), "GovernorAlpha::propose: proposer votes below proposal threshold");
+        require(uni.getPriorVotes(msg.sender, sub256(block.number, 1)) > proposalThreshold(), "GovernorAlpha::propose: proposer votes below proposal threshold");
         require(targets.length == values.length && targets.length == signatures.length && targets.length == calldatas.length, "GovernorAlpha::propose: proposal function information arity mismatch");
         require(targets.length != 0, "GovernorAlpha::propose: must provide actions");
         require(targets.length <= proposalMaxOperations(), "GovernorAlpha::propose: too many actions");
@@ -150,8 +142,8 @@ contract GovernorAlpha {
           require(proposersLatestProposalState != ProposalState.Pending, "GovernorAlpha::propose: one live proposal per proposer, found an already pending proposal");
         }
 
-        uint startBlock = block.number.add(votingDelay());
-        uint endBlock = startBlock.add(votingPeriod());
+        uint startBlock = add256(block.number, votingDelay());
+        uint endBlock = add256(startBlock, votingPeriod());
 
         proposalCount++;
         Proposal memory newProposal = Proposal({
@@ -180,7 +172,7 @@ contract GovernorAlpha {
     function queue(uint proposalId) public {
         require(state(proposalId) == ProposalState.Succeeded, "GovernorAlpha::queue: proposal can only be queued if it is succeeded");
         Proposal storage proposal = proposals[proposalId];
-        uint eta = block.timestamp.add(timelock.delay());
+        uint eta = add256(block.timestamp, timelock.delay());
         for (uint i = 0; i < proposal.targets.length; i++) {
             _queueOrRevert(proposal.targets[i], proposal.values[i], proposal.signatures[i], proposal.calldatas[i], eta);
         }
@@ -208,7 +200,7 @@ contract GovernorAlpha {
         require(state != ProposalState.Executed, "GovernorAlpha::cancel: cannot cancel executed proposal");
 
         Proposal storage proposal = proposals[proposalId];
-        require(uni.getPriorVotes(proposal.proposer, block.number.sub(1)) < proposalThreshold(block.number.sub(1)), "GovernorAlpha::cancel: proposer above threshold");
+        require(uni.getPriorVotes(proposal.proposer, sub256(block.number, 1)) < proposalThreshold(), "GovernorAlpha::cancel: proposer above threshold");
 
         proposal.canceled = true;
         for (uint i = 0; i < proposal.targets.length; i++) {
@@ -236,13 +228,13 @@ contract GovernorAlpha {
             return ProposalState.Pending;
         } else if (block.number <= proposal.endBlock) {
             return ProposalState.Active;
-        } else if (proposal.forVotes <= proposal.againstVotes || proposal.forVotes < quorumVotes(proposal.startBlock)) {
+        } else if (proposal.forVotes <= proposal.againstVotes || proposal.forVotes < quorumVotes()) {
             return ProposalState.Defeated;
         } else if (proposal.eta == 0) {
             return ProposalState.Succeeded;
         } else if (proposal.executed) {
             return ProposalState.Executed;
-        } else if (block.timestamp >= proposal.eta.add(timelock.GRACE_PERIOD())) {
+        } else if (block.timestamp >= add256(proposal.eta, timelock.GRACE_PERIOD())) {
             return ProposalState.Expired;
         } else {
             return ProposalState.Queued;
@@ -270,9 +262,9 @@ contract GovernorAlpha {
         uint96 votes = uni.getPriorVotes(voter, proposal.startBlock);
 
         if (support) {
-            proposal.forVotes = proposal.forVotes.add(votes);
+            proposal.forVotes = add256(proposal.forVotes, votes);
         } else {
-            proposal.againstVotes = proposal.againstVotes.add(votes);
+            proposal.againstVotes = add256(proposal.againstVotes, votes);
         }
 
         receipt.hasVoted = true;
@@ -280,6 +272,17 @@ contract GovernorAlpha {
         receipt.votes = votes;
 
         emit VoteCast(voter, proposalId, support, votes);
+    }
+
+    function add256(uint256 a, uint256 b) internal pure returns (uint) {
+        uint c = a + b;
+        require(c >= a, "addition overflow");
+        return c;
+    }
+
+    function sub256(uint256 a, uint256 b) internal pure returns (uint) {
+        require(b <= a, "subtraction underflow");
+        return a - b;
     }
 
     function getChainId() internal pure returns (uint) {
@@ -300,6 +303,5 @@ interface TimelockInterface {
 }
 
 interface UniInterface {
-    function getPriorTotalSupply(uint blockNumber) external view returns (uint);
     function getPriorVotes(address account, uint blockNumber) external view returns (uint96);
 }
