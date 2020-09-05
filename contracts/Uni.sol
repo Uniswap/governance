@@ -28,7 +28,7 @@ contract Uni {
     uint public lastMint;
 
     /// @notice Minimum period over which totalSupply can be inflated
-    uint public constant mintingPeriod = 1 years;
+    uint public constant mintingPeriod = 1 days * 365;
 
     /// @notice Cap on the percentage of totalSupply that can be minted per mintingPeriod
     uint8 public constant growthCap = 2;
@@ -85,7 +85,7 @@ contract Uni {
      * @notice Construct a new Uni token
      * @param account The initial account to grant all the tokens
      * @param minter_ The account with minting ability
-     * @param mintingGenesisBlock_ The block at which minting may begin
+     * @param mintingGenesisTime_ The time at which minting may begin
      */
     constructor(address account, address minter_, uint mintingGenesisTime_) public {
         balances[account] = uint96(totalSupply);
