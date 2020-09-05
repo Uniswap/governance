@@ -15,17 +15,23 @@ contract Uni {
     /// @notice EIP-20 token decimals for this token
     uint8 public constant decimals = 18;
 
-    /// @notice Total number of tokens in circulation at the genesis of the contract
-    uint public totalSupplyGenesis = 1000000000e18; // 1 billion Uni
-
     /// @notice Total number of tokens in circulation
-    uint public totalSupply = totalSupplyGenesis;
+    uint public totalSupply = 1000000000e18; // 1 billion Uni
 
-    /// @notice Address which may mint new tokens according to a fixed schedule
+    /// @notice Address which may mint new tokens
     address public minter;
 
-    /// @notice The block at which minting may begin
-    uint public mintingGenesisBlock;
+    /// @notice The timestamp at which minting may begin
+    uint public mintingGenesisTime;
+
+    /// @notice The timestamp at which the most recent minting event occurred
+    uint public lastMint;
+
+    /// @notice Minimum period over which totalSupply can be inflated
+    uint public constant mintingPeriod = 1 years;
+
+    /// @notice Cap on the percentage of totalSupply that can be minted per mintingPeriod
+    uint8 public constant growthCap = 2;
 
     /// @notice Allowance amounts on behalf of others
     mapping (address => mapping (address => uint96)) internal allowances;
@@ -81,14 +87,13 @@ contract Uni {
      * @param minter_ The account with minting ability
      * @param mintingGenesisBlock_ The block at which minting may begin
      */
-    constructor(address account, address minter_, uint mintingGenesisBlock_) public {
+    constructor(address account, address minter_, uint mintingGenesisTime_) public {
         balances[account] = uint96(totalSupply);
         emit Transfer(address(0), account, totalSupply);
-        assert(minter_ != address(0));
         minter = minter_;
         emit MinterChanged(address(0), minter);
-        assert(mintingGenesisBlock_ > block.number);
-        mintingGenesisBlock = mintingGenesisBlock_;
+        assert(mintingGenesisTime_ > block.timestamp);
+        mintingGenesisTime = mintingGenesisTime_;
     }
 
     /**
@@ -104,18 +109,25 @@ contract Uni {
     /**
      * @notice Mint new tokens
      * @param dst The address of the destination account
+     * @param rawAmount The number of tokens to be minted
      */
-    function mint(address dst) external {
+    function mint(address dst, uint rawAmount) external {
         require(msg.sender == minter, "Uni::mint: only the minter can mint");
-        require(dst != address(0), "Uni::_transferTokens: cannot transfer to the zero address");
-        // Get the maximum possible value of total supply as of the last block
-        uint rawAmount = getPriorTotalSupply(block.number - 1).sub(totalSupply);
-        uint96 amount = safe96(rawAmount, "Uni::mint: amount exceeds 96 bits");
+        require(block.timestamp >= mintingGenesisTime, "Uni::mint: minting has not yet begun");
+        require(block.timestamp >= lastMint.add(mintingPeriod), "Uni::mint: too soon");
+        require(dst != address(0), "Uni::mint: cannot transfer to the zero address");
 
-        totalSupply = totalSupply.add(rawAmount);
+        // mint the amount
+        uint96 amount = safe96(rawAmount, "Uni::mint: amount exceeds 96 bits");
+        require(amount <= totalSupply.mul(growthCap).div(100), "Uni::mint: cannot exceed growth cap");
+        totalSupply = totalSupply.add(amount);
+        lastMint = block.timestamp;
+
+        // transfer the amount to the recipient
         balances[dst] = add96(balances[dst], amount, "Uni::mint: transfer amount overflows");
         emit Transfer(address(0), dst, amount);
 
+        // move delegates
         address dstRep = delegates[dst];
         if (dstRep != address(0)) {
             uint32 dstRepNum = numCheckpoints[dstRep];
@@ -309,22 +321,6 @@ contract Uni {
             }
         }
         return checkpoints[account][lower].votes;
-    }
-
-    /**
-     * @notice Determine the maximum possible value of totalSupply as of a block number (could be lower in practice)
-     * @dev Block number must be a finalized block or else this function will revert to prevent misinformation.
-     * @param blockNumber The block number to get the vote balance at
-     * @return The maximum possible value of totalSupply as of the given block
-     */
-    function getPriorTotalSupply(uint blockNumber) public view returns (uint) {
-        require(blockNumber < block.number, "Uni::getPriorVotes: not yet determined");
-
-        if (blockNumber <= mintingGenesisBlock) {
-            return totalSupply;
-        } else {
-            return totalSupplyGenesis.add((blockNumber - mintingGenesisBlock).mul(5e18));
-        }
     }
 
     function _delegate(address delegator, address delegatee) internal {
