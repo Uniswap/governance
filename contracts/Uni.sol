@@ -28,7 +28,7 @@ contract Uni {
     uint public lastMint;
 
     /// @notice Minimum period over which totalSupply can be inflated
-    uint public constant mintingPeriod = 1 days * 365;
+    uint32 public constant mintingPeriod = 1 days * 365;
 
     /// @notice Cap on the percentage of totalSupply that can be minted per mintingPeriod
     uint8 public constant growthCap = 2;
