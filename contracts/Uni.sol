@@ -16,7 +16,7 @@ contract Uni {
     uint8 public constant decimals = 18;
 
     /// @notice Total number of tokens in circulation
-    uint public totalSupply = 1000000000e18; // 1 billion Uni
+    uint public totalSupply = 1_000_000_000e18; // 1 billion Uni
 
     /// @notice Address which may mint new tokens
     address public minter;
