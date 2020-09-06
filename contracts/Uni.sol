@@ -92,7 +92,7 @@ contract Uni {
         emit Transfer(address(0), account, totalSupply);
         minter = minter_;
         emit MinterChanged(address(0), minter);
-        assert(mintingGenesisTime_ > block.timestamp);
+        require(mintingGenesisTime_ > block.timestamp, "Uni::constructor: minting can only begin after deployment");
         mintingGenesisTime = mintingGenesisTime_;
     }
 
