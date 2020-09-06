@@ -8,7 +8,7 @@ contract FeeToSetterVester {
     constructor(address factory_, address timelock_, uint vestingEnd_) public {
         factory = factory_;
         timelock = timelock_;
-        assert(vestingEnd_ > block.timestamp);
+        require(vestingEnd_ > block.timestamp, 'FeeToSetterVester::divest: vesting must end after deployment');
         vestingEnd = vestingEnd_;
     }
 
