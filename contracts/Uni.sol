@@ -128,13 +128,7 @@ contract Uni {
         emit Transfer(address(0), dst, amount);
 
         // move delegates
-        address dstRep = delegates[dst];
-        if (dstRep != address(0)) {
-            uint32 dstRepNum = numCheckpoints[dstRep];
-            uint96 dstRepOld = dstRepNum > 0 ? checkpoints[dstRep][dstRepNum - 1].votes : 0;
-            uint96 dstRepNew = add96(dstRepOld, amount, "Uni::mint: vote amount overflows");
-            _writeCheckpoint(dstRep, dstRepNum, dstRepOld, dstRepNew);
-        }
+        _moveDelegates(address(0), delegates[dst], amount);
     }
 
     /**
