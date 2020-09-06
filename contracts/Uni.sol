@@ -12,7 +12,7 @@ contract Uni {
     uint8 public constant decimals = 18;
 
     /// @notice Total number of tokens in circulation
-    uint public constant totalSupply = 10000000e18; // 10 million Uni
+    uint public constant totalSupply = 1_000_000_000e18; // 1 billion Uni
 
     /// @notice Allowance amounts on behalf of others
     mapping (address => mapping (address => uint96)) internal allowances;
