@@ -4,8 +4,6 @@ pragma experimental ABIEncoderV2;
 import "./SafeMath.sol";
 
 contract Uni {
-    using SafeMath for uint;
-
     /// @notice EIP-20 token name for this token
     string public constant name = "Uniswap";
 
@@ -114,13 +112,13 @@ contract Uni {
     function mint(address dst, uint rawAmount) external {
         require(msg.sender == minter, "Uni::mint: only the minter can mint");
         require(block.timestamp >= mintingGenesisTime, "Uni::mint: minting has not yet begun");
-        require(block.timestamp >= lastMint.add(mintingPeriod), "Uni::mint: too soon");
+        require(block.timestamp >= SafeMath.add(lastMint, mintingPeriod), "Uni::mint: too soon");
         require(dst != address(0), "Uni::mint: cannot transfer to the zero address");
 
         // mint the amount
         uint96 amount = safe96(rawAmount, "Uni::mint: amount exceeds 96 bits");
-        require(amount <= totalSupply.mul(growthCap).div(100), "Uni::mint: cannot exceed growth cap");
-        totalSupply = safe96(totalSupply.add(amount), "Uni::mint: totalSupply exceeds 96 bits");
+        require(amount <= SafeMath.div(SafeMath.mul(totalSupply, growthCap), 100), "Uni::mint: cannot exceed growth cap");
+        totalSupply = safe96(SafeMath.add(totalSupply, amount), "Uni::mint: totalSupply exceeds 96 bits");
         lastMint = block.timestamp;
 
         // transfer the amount to the recipient
