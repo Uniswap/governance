@@ -22,10 +22,10 @@ contract Uni {
     /// @notice The timestamp after which minting may occur
     uint public mintingAllowedAfter;
 
-    /// @notice Minimum period over which totalSupply can be inflated
-    uint32 public constant mintingPeriod = 1 days * 365;
+    /// @notice Minimum time between mints
+    uint32 public constant minimumTimeBetweenMints = 1 days * 365;
 
-    /// @notice Cap on the percentage of totalSupply that can be minted per mintingPeriod
+    /// @notice Cap on the percentage of totalSupply that can be minted
     uint8 public constant growthCap = 2;
 
     /// @notice Allowance amounts on behalf of others
@@ -116,7 +116,7 @@ contract Uni {
         uint96 amount = safe96(rawAmount, "Uni::mint: amount exceeds 96 bits");
         require(amount <= SafeMath.div(SafeMath.mul(totalSupply, growthCap), 100), "Uni::mint: cannot exceed growth cap");
         totalSupply = safe96(SafeMath.add(totalSupply, amount), "Uni::mint: totalSupply exceeds 96 bits");
-        mintingAllowedAfter = SafeMath.add(block.timestamp, mintingPeriod);
+        mintingAllowedAfter = SafeMath.add(block.timestamp, minimumTimeBetweenMints);
 
         // transfer the amount to the recipient
         balances[dst] = add96(balances[dst], amount, "Uni::mint: transfer amount overflows");
