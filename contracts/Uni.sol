@@ -25,8 +25,8 @@ contract Uni {
     /// @notice Minimum time between mints
     uint32 public constant minimumTimeBetweenMints = 1 days * 365;
 
-    /// @notice Cap on the percentage of totalSupply that can be minted
-    uint8 public constant growthCap = 2;
+    /// @notice Cap on the percentage of totalSupply that can be minted at each mint
+    uint8 public constant mintCap = 2;
 
     /// @notice Allowance amounts on behalf of others
     mapping (address => mapping (address => uint96)) internal allowances;
@@ -114,7 +114,7 @@ contract Uni {
 
         // mint the amount
         uint96 amount = safe96(rawAmount, "Uni::mint: amount exceeds 96 bits");
-        require(amount <= SafeMath.div(SafeMath.mul(totalSupply, growthCap), 100), "Uni::mint: cannot exceed growth cap");
+        require(amount <= SafeMath.div(SafeMath.mul(totalSupply, mintCap), 100), "Uni::mint: exceeded mint cap");
         totalSupply = safe96(SafeMath.add(totalSupply, amount), "Uni::mint: totalSupply exceeds 96 bits");
         mintingAllowedAfter = SafeMath.add(block.timestamp, minimumTimeBetweenMints);
 
