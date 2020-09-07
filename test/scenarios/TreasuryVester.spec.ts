@@ -31,17 +31,20 @@ describe('scenario:TreasuryVester', () => {
   let treasuryVester: Contract
   let vestingAmount: BigNumber
   let vestingBegin: number
+  let vestingCliff: number
   let vestingEnd: number
   beforeEach('deploy treasury vesting contract', async () => {
     const { timestamp: now } = await provider.getBlock('latest')
     vestingAmount = expandTo18Decimals(100)
     vestingBegin = now + 60
+    vestingCliff = vestingBegin + 60
     vestingEnd = vestingBegin + 60 * 60 * 24 * 365
     treasuryVester = await deployContract(wallet, TreasuryVester, [
       uni.address,
       timelock.address,
       vestingAmount,
       vestingBegin,
+      vestingCliff,
       vestingEnd,
     ])
 
@@ -56,6 +59,8 @@ describe('scenario:TreasuryVester', () => {
   })
 
   it('claim:fail', async () => {
+    await expect(treasuryVester.claim()).to.be.revertedWith('TreasuryVester::claim: not time yet')
+    await mineBlock(provider, vestingBegin + 1)
     await expect(treasuryVester.claim()).to.be.revertedWith('TreasuryVester::claim: not time yet')
   })
 
