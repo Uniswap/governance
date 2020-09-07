@@ -10,18 +10,30 @@ contract TreasuryVester {
 
     uint public vestingAmount;
     uint public vestingBegin;
+    uint public vestingCliff;
     uint public vestingEnd;
 
     uint public lastUpdate;
 
-    constructor(address uni_, address recipient_, uint vestingAmount_, uint vestingBegin_, uint vestingEnd_) public {
+    constructor(
+        address uni_,
+        address recipient_,
+        uint vestingAmount_,
+        uint vestingBegin_,
+        uint vestingCliff_,
+        uint vestingEnd_
+    ) public {
         uni = uni_;
         recipient = recipient_;
+
         vestingAmount = vestingAmount_;
-        assert(vestingBegin_ > block.timestamp);
+        require(vestingBegin_ >= block.timestamp, 'TreasuryVester::constructor: vesting begin too early');
         vestingBegin = vestingBegin_;
-        assert(vestingEnd_ > vestingBegin_);
+        require(vestingCliff_ >= vestingBegin_, 'TreasuryVester::constructor: cliff is too early');
+        vestingCliff = vestingCliff_;
+        require(vestingEnd_ > vestingCliff_, 'TreasuryVester::constructor: end is too early');
         vestingEnd = vestingEnd_;
+
         lastUpdate = vestingBegin;
     }
 
@@ -31,7 +43,7 @@ contract TreasuryVester {
     }
 
     function claim() public {
-        require(block.timestamp > vestingBegin, 'TreasuryVester::claim: not time yet');
+        require(block.timestamp >= vestingCliff, 'TreasuryVester::claim: not time yet');
         uint amount;
         if (block.timestamp >= vestingEnd) {
             amount = IUni(uni).balanceOf(address(this));
