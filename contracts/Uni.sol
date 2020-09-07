@@ -1,6 +1,8 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
+import "./SafeMath.sol";
+
 contract Uni {
     /// @notice EIP-20 token name for this token
     string public constant name = "Uniswap";
@@ -12,7 +14,19 @@ contract Uni {
     uint8 public constant decimals = 18;
 
     /// @notice Total number of tokens in circulation
-    uint public constant totalSupply = 1_000_000_000e18; // 1 billion Uni
+    uint public totalSupply = 1_000_000_000e18; // 1 billion Uni
+
+    /// @notice Address which may mint new tokens
+    address public minter;
+
+    /// @notice The timestamp after which minting may occur
+    uint public mintingAllowedAfter;
+
+    /// @notice Minimum time between mints
+    uint32 public constant minimumTimeBetweenMints = 1 days * 365;
+
+    /// @notice Cap on the percentage of totalSupply that can be minted at each mint
+    uint8 public constant mintCap = 2;
 
     /// @notice Allowance amounts on behalf of others
     mapping (address => mapping (address => uint96)) internal allowances;
@@ -47,6 +61,9 @@ contract Uni {
     /// @notice A record of states for signing / validating signatures
     mapping (address => uint) public nonces;
 
+    /// @notice An event thats emitted when the minter address is changed
+    event MinterChanged(address minter, address newMinter);
+
     /// @notice An event thats emitted when an account changes its delegate
     event DelegateChanged(address indexed delegator, address indexed fromDelegate, address indexed toDelegate);
 
@@ -62,10 +79,53 @@ contract Uni {
     /**
      * @notice Construct a new Uni token
      * @param account The initial account to grant all the tokens
+     * @param minter_ The account with minting ability
+     * @param mintingAllowedAfter_ The timestamp after which minting may occur
      */
-    constructor(address account) public {
+    constructor(address account, address minter_, uint mintingAllowedAfter_) public {
+        require(mintingAllowedAfter_ >= block.timestamp, "Uni::constructor: minting can only begin after deployment");
+
         balances[account] = uint96(totalSupply);
         emit Transfer(address(0), account, totalSupply);
+        minter = minter_;
+        emit MinterChanged(address(0), minter);
+        mintingAllowedAfter = mintingAllowedAfter_;
+    }
+
+    /**
+     * @notice Change the minter address
+     * @param minter_ The address of the new minter
+     */
+    function setMinter(address minter_) external {
+        require(msg.sender == minter, "Uni::setMinter: only the minter can change the minter address");
+        emit MinterChanged(minter, minter_);
+        minter = minter_;
+    }
+
+    /**
+     * @notice Mint new tokens
+     * @param dst The address of the destination account
+     * @param rawAmount The number of tokens to be minted
+     */
+    function mint(address dst, uint rawAmount) external {
+        require(msg.sender == minter, "Uni::mint: only the minter can mint");
+        require(block.timestamp >= mintingAllowedAfter, "Uni::mint: minting not allowed yet");
+        require(dst != address(0), "Uni::mint: cannot transfer to the zero address");
+
+        // record the mint
+        mintingAllowedAfter = SafeMath.add(block.timestamp, minimumTimeBetweenMints);
+
+        // mint the amount
+        uint96 amount = safe96(rawAmount, "Uni::mint: amount exceeds 96 bits");
+        require(amount <= SafeMath.div(SafeMath.mul(totalSupply, mintCap), 100), "Uni::mint: exceeded mint cap");
+        totalSupply = safe96(SafeMath.add(totalSupply, amount), "Uni::mint: totalSupply exceeds 96 bits");
+
+        // transfer the amount to the recipient
+        balances[dst] = add96(balances[dst], amount, "Uni::mint: transfer amount overflows");
+        emit Transfer(address(0), dst, amount);
+
+        // move delegates
+        _moveDelegates(address(0), delegates[dst], amount);
     }
 
     /**
