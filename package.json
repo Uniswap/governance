@@ -1,6 +1,6 @@
 {
   "name": "@uniswap/governance",
-  "version": "1.0.0-alpha.3",
+  "version": "1.0.0",
   "description": "🏛 Governance contracts for the Uniswap protocol",
   "author": "Noah Zinsmeister",
   "license": "MIT",
