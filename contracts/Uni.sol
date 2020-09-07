@@ -19,11 +19,8 @@ contract Uni {
     /// @notice Address which may mint new tokens
     address public minter;
 
-    /// @notice The timestamp at which minting may begin
-    uint public mintingGenesisTime;
-
-    /// @notice The timestamp at which the most recent minting event occurred
-    uint public lastMint;
+    /// @notice The timestamp after which minting may occur
+    uint public mintingAllowedAfter;
 
     /// @notice Minimum period over which totalSupply can be inflated
     uint32 public constant mintingPeriod = 1 days * 365;
@@ -85,13 +82,14 @@ contract Uni {
      * @param minter_ The account with minting ability
      * @param mintingGenesisTime_ The time at which minting may begin
      */
-    constructor(address account, address minter_, uint mintingGenesisTime_) public {
+    constructor(address account, address minter_, uint mintingAllowedAfter_) public {
+        require(mintingAllowedAfter_ >= block.timestamp, "Uni::constructor: minting can only begin after deployment");
+
         balances[account] = uint96(totalSupply);
         emit Transfer(address(0), account, totalSupply);
         minter = minter_;
         emit MinterChanged(address(0), minter);
-        require(mintingGenesisTime_ > block.timestamp, "Uni::constructor: minting can only begin after deployment");
-        mintingGenesisTime = mintingGenesisTime_;
+        mintingAllowedAfter = mintingAllowedAfter_;
     }
 
     /**
@@ -111,15 +109,14 @@ contract Uni {
      */
     function mint(address dst, uint rawAmount) external {
         require(msg.sender == minter, "Uni::mint: only the minter can mint");
-        require(block.timestamp >= mintingGenesisTime, "Uni::mint: minting has not yet begun");
-        require(block.timestamp >= SafeMath.add(lastMint, mintingPeriod), "Uni::mint: too soon");
+        require(block.timestamp >= mintingAllowedAfter, "Uni::mint: minting not allowed yet");
         require(dst != address(0), "Uni::mint: cannot transfer to the zero address");
 
         // mint the amount
         uint96 amount = safe96(rawAmount, "Uni::mint: amount exceeds 96 bits");
         require(amount <= SafeMath.div(SafeMath.mul(totalSupply, growthCap), 100), "Uni::mint: cannot exceed growth cap");
         totalSupply = safe96(SafeMath.add(totalSupply, amount), "Uni::mint: totalSupply exceeds 96 bits");
-        lastMint = block.timestamp;
+        mintingAllowedAfter = SafeMath.add(block.timestamp, mintingPeriod);
 
         // transfer the amount to the recipient
         balances[dst] = add96(balances[dst], amount, "Uni::mint: transfer amount overflows");
