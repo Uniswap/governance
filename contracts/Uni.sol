@@ -112,11 +112,13 @@ contract Uni {
         require(block.timestamp >= mintingAllowedAfter, "Uni::mint: minting not allowed yet");
         require(dst != address(0), "Uni::mint: cannot transfer to the zero address");
 
+        // record the mint
+        mintingAllowedAfter = SafeMath.add(block.timestamp, minimumTimeBetweenMints);
+
         // mint the amount
         uint96 amount = safe96(rawAmount, "Uni::mint: amount exceeds 96 bits");
         require(amount <= SafeMath.div(SafeMath.mul(totalSupply, mintCap), 100), "Uni::mint: exceeded mint cap");
         totalSupply = safe96(SafeMath.add(totalSupply, amount), "Uni::mint: totalSupply exceeds 96 bits");
-        mintingAllowedAfter = SafeMath.add(block.timestamp, minimumTimeBetweenMints);
 
         // transfer the amount to the recipient
         balances[dst] = add96(balances[dst], amount, "Uni::mint: transfer amount overflows");
