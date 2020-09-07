@@ -44,6 +44,8 @@ describe('GovernorAlpha', () => {
   })
 
   it('governor', async () => {
+    const votingPeriod = await governorAlpha.votingPeriod()
+    expect(votingPeriod).to.be.eq(40320)
     const timelockAddress = await governorAlpha.timelock()
     expect(timelockAddress).to.be.eq(timelock.address)
     const uniFromGovernor = await governorAlpha.uni()
