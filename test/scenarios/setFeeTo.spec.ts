@@ -69,5 +69,5 @@ describe('scenario:setFeeTo', () => {
 
     const feeTo = await factory.feeTo()
     expect(feeTo).to.be.eq(timelock.address)
-  }).timeout(200000)
+  }).timeout(500000)
 })
