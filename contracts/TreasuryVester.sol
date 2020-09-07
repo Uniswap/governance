@@ -23,15 +23,16 @@ contract TreasuryVester {
         uint vestingCliff_,
         uint vestingEnd_
     ) public {
+        require(vestingBegin_ >= block.timestamp, 'TreasuryVester::constructor: vesting begin too early');
+        require(vestingCliff_ >= vestingBegin_, 'TreasuryVester::constructor: cliff is too early');
+        require(vestingEnd_ > vestingCliff_, 'TreasuryVester::constructor: end is too early');
+
         uni = uni_;
         recipient = recipient_;
 
         vestingAmount = vestingAmount_;
-        require(vestingBegin_ >= block.timestamp, 'TreasuryVester::constructor: vesting begin too early');
         vestingBegin = vestingBegin_;
-        require(vestingCliff_ >= vestingBegin_, 'TreasuryVester::constructor: cliff is too early');
         vestingCliff = vestingCliff_;
-        require(vestingEnd_ > vestingCliff_, 'TreasuryVester::constructor: end is too early');
         vestingEnd = vestingEnd_;
 
         lastUpdate = vestingBegin;
