@@ -80,7 +80,7 @@ contract Uni {
      * @notice Construct a new Uni token
      * @param account The initial account to grant all the tokens
      * @param minter_ The account with minting ability
-     * @param mintingGenesisTime_ The time at which minting may begin
+     * @param mintingAllowedAfter_ The timestamp after which minting may occur
      */
     constructor(address account, address minter_, uint mintingAllowedAfter_) public {
         require(mintingAllowedAfter_ >= block.timestamp, "Uni::constructor: minting can only begin after deployment");
