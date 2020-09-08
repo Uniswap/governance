@@ -3,14 +3,14 @@ import { Contract } from 'ethers'
 import { solidity, MockProvider, createFixtureLoader, deployContract } from 'ethereum-waffle'
 
 import UniswapV2Factory from '@uniswap/v2-core/build/UniswapV2Factory.json'
-import FeeToSetterVester from '../../build/FeeToSetterVester.json'
+import FeeToSetterVester from '../../build/FeeToSetter.json'
 
 import { governanceFixture } from '../fixtures'
 import { mineBlock } from '../utils'
 
 chai.use(solidity)
 
-describe('scenario:FeeToSetterVester', () => {
+describe.only('scenario:FeeToSetter', () => {
   const provider = new MockProvider({
     ganacheOptions: {
       hardfork: 'istanbul',
@@ -37,10 +37,10 @@ describe('scenario:FeeToSetterVester', () => {
   beforeEach('deploy feeToSetter vesting contract', async () => {
     const { timestamp: now } = await provider.getBlock('latest')
     vestingEnd = now + 60
-    feeToSetterVester = await deployContract(wallet, FeeToSetterVester, [factory.address, timelock.address, vestingEnd])
+    feeToSetterVester = await deployContract(wallet, FeeToSetterVester, [factory.address, vestingEnd, timelock.address])
   })
 
-  it('divest', async () => {
+  it.skip('divest', async () => {
     // set feeToSetter to be the vesting contract
     await factory.setFeeToSetter(feeToSetterVester.address)
 
