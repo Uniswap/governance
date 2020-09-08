@@ -10,7 +10,7 @@ import { mineBlock } from '../utils'
 
 chai.use(solidity)
 
-describe('scenario:FeeToSetterVester', () => {
+describe.only('scenario:FeeToSetterVester', () => {
   const provider = new MockProvider({
     ganacheOptions: {
       hardfork: 'istanbul',
@@ -18,7 +18,7 @@ describe('scenario:FeeToSetterVester', () => {
       gasLimit: 9999999,
     },
   })
-  const [wallet] = provider.getWallets()
+  const [wallet, other] = provider.getWallets()
   const loadFixture = createFixtureLoader([wallet], provider)
 
   let timelock: Contract
@@ -37,7 +37,8 @@ describe('scenario:FeeToSetterVester', () => {
   beforeEach('deploy feeToSetter vesting contract', async () => {
     const { timestamp: now } = await provider.getBlock('latest')
     vestingEnd = now + 60
-    feeToSetterVester = await deployContract(wallet, FeeToSetterVester, [factory.address, timelock.address, vestingEnd])
+    // 2nd constructor arg should be timelock, just mocking for testing purposes
+    feeToSetterVester = await deployContract(wallet, FeeToSetterVester, [factory.address, wallet.address, vestingEnd])
   })
 
   it('divest', async () => {
@@ -48,7 +49,16 @@ describe('scenario:FeeToSetterVester', () => {
 
     await mineBlock(provider, vestingEnd)
 
+    await expect(feeToSetterVester.divest()).to.be.revertedWith('FeeToSetterVester::divest: zero address')
+
+    await expect(feeToSetterVester.connect(other).setFeeToSetterToBe(timelock.address)).to.be.revertedWith(
+      'FeeToSetterVester::setFeeToSetterToBe: not authorized'
+    )
+
+    await feeToSetterVester.setFeeToSetterToBe(timelock.address)
+
     await feeToSetterVester.divest()
+
     const feeToSetter = await factory.feeToSetter()
     expect(feeToSetter).to.be.eq(timelock.address)
   })
