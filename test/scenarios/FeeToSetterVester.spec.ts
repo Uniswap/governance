@@ -10,7 +10,7 @@ import { mineBlock } from '../utils'
 
 chai.use(solidity)
 
-describe.only('scenario:FeeToSetterVester', () => {
+describe('scenario:FeeToSetterVester', () => {
   const provider = new MockProvider({
     ganacheOptions: {
       hardfork: 'istanbul',
