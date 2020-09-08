@@ -110,12 +110,14 @@ describe('Uni', () => {
     await expect(uni.mint('0x0000000000000000000000000000000000000000', 1)).to.be.revertedWith('Uni::mint: cannot transfer to the zero address')
 
     // can mint up to 2%
-    const max = BigNumber.from(await uni.mintCap()).div(100)
-    await uni.mint(wallet.address, supply.mul(max))
+    const mintCap = BigNumber.from(await uni.mintCap())
+    const amount = supply.mul(mintCap).div(100)
+    await uni.mint(wallet.address, amount)
+    expect(await uni.balanceOf(wallet.address)).to.be.eq(supply.add(amount))
 
     timestamp = await uni.mintingAllowedAfter()
     await mineBlock(provider, timestamp.toString())
     // cannot mint 2.01%
-    await expect(uni.mint(wallet.address, supply.mul(max.add(1)))).to.be.revertedWith('Uni::mint: exceeded mint cap')
+    await expect(uni.mint(wallet.address, supply.mul(mintCap.add(1)))).to.be.revertedWith('Uni::mint: exceeded mint cap')
   })
 })
