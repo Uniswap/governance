@@ -12,7 +12,7 @@ import { mineBlock, expandTo18Decimals } from '../utils'
 
 chai.use(solidity)
 
-describe.only('scenario:FeeToSetter', () => {
+describe('scenario:FeeToSetter', () => {
   const provider = new MockProvider({
     ganacheOptions: {
       hardfork: 'istanbul',
