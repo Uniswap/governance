@@ -1,5 +1,6 @@
 pragma solidity ^0.5.16;
 
+// this contract serves as feeToSetter, allowing owner to manage fees in the context of a specific feeTo implementation
 contract FeeToSetter {
     address public factory;
     uint public vestingEnd;

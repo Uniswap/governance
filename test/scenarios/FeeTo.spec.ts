@@ -59,10 +59,10 @@ describe('scenario:FeeTo', () => {
   })
 
   it('permissions', async () => {
-    await expect(feeTo.connect(other).setTimelock(other.address)).to.be.revertedWith('FeeTo::setTimelock: not allowed')
+    await expect(feeTo.connect(other).setOwner(other.address)).to.be.revertedWith('FeeTo::setOwner: not allowed')
 
-    await expect(feeTo.connect(other).setFeeHandler(other.address)).to.be.revertedWith(
-      'FeeTo::setFeeHandler: not allowed'
+    await expect(feeTo.connect(other).setFeeRecipient(other.address)).to.be.revertedWith(
+      'FeeTo::setFeeRecipient: not allowed'
     )
   })
 
@@ -135,7 +135,7 @@ describe('scenario:FeeTo', () => {
     it('claim is a no-op if renounce has not been called', async () => {
       await feeTo.updateTokenAllowState(tokens[0].address, true)
       await feeTo.updateTokenAllowState(tokens[1].address, true)
-      await feeTo.setFeeHandler(other.address)
+      await feeTo.setFeeRecipient(other.address)
 
       const balanceBefore = await pair.balanceOf(other.address)
       expect(balanceBefore).to.be.eq(0)
@@ -147,7 +147,7 @@ describe('scenario:FeeTo', () => {
     it('renounce works', async () => {
       await feeTo.updateTokenAllowState(tokens[0].address, true)
       await feeTo.updateTokenAllowState(tokens[1].address, true)
-      await feeTo.setFeeHandler(other.address)
+      await feeTo.setFeeRecipient(other.address)
 
       const totalSupplyBefore = await pair.totalSupply()
       await feeTo.renounce(pair.address, { gasLimit: 9999999 })
@@ -158,7 +158,7 @@ describe('scenario:FeeTo', () => {
     it('claim works', async () => {
       await feeTo.updateTokenAllowState(tokens[0].address, true)
       await feeTo.updateTokenAllowState(tokens[1].address, true)
-      await feeTo.setFeeHandler(other.address)
+      await feeTo.setFeeRecipient(other.address)
 
       await feeTo.renounce(pair.address, { gasLimit: 9999999 })
 

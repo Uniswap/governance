@@ -1,8 +1,10 @@
 pragma solidity ^0.5.16;
 
+// this contract gives owner the ability to allow tokens. for pairs in which both tokens are allowed, fees may be
+// collected on that pair and send to feeRecipient, though only after burning all fees up to that point
 contract FeeTo {
-    address public timelock;
-    address public feeHandler;
+    address public owner;
+    address public feeRecipient;
 
     struct TokenAllowState {
         bool    allowed;
@@ -16,22 +18,22 @@ contract FeeTo {
     }
     mapping(address => PairAllowState) public pairAllowStates;
 
-    constructor(address timelock_) public {
-        timelock = timelock_;
+    constructor(address owner_) public {
+        owner = owner_;
     }
 
-    function setTimelock(address timelock_) public {
-        require(msg.sender == timelock, 'FeeTo::setTimelock: not allowed');
-        timelock = timelock_;
+    function setOwner(address owner_) public {
+        require(msg.sender == owner, 'FeeTo::setOwner: not allowed');
+        owner = owner_;
     }
 
-    function setFeeHandler(address feeHandler_) public {
-        require(msg.sender == timelock, 'FeeTo::setFeeHandler: not allowed');
-        feeHandler = feeHandler_;
+    function setFeeRecipient(address feeRecipient_) public {
+        require(msg.sender == owner, 'FeeTo::setFeeRecipient: not allowed');
+        feeRecipient = feeRecipient_;
     }
 
     function updateTokenAllowState(address token, bool allowed) public {
-        require(msg.sender == timelock, 'FeeTo::updateTokenAllowState: not allowed');
+        require(msg.sender == owner, 'FeeTo::updateTokenAllowState: not allowed');
         TokenAllowState storage tokenAllowState = tokenAllowStates[token];
         // if allowed is not changing, the function is a no-op
         if (allowed != tokenAllowState.allowed) {
@@ -104,12 +106,12 @@ contract FeeTo {
             token1AllowState.allowed &&
             token0AllowState.disallowCount == pairAllowState.token0DisallowCount &&
             token1AllowState.disallowCount == pairAllowState.token1DisallowCount &&
-            feeHandler != address(0)
+            feeRecipient != address(0)
         ) {
             value = IUniswapV2Pair(pair).balanceOf(address(this));
             if (value > 0) {
                 // transfer tokens to the handler (assert because transfer cannot fail with value as balanceOf)
-                assert(IUniswapV2Pair(pair).transfer(feeHandler, value));
+                assert(IUniswapV2Pair(pair).transfer(feeRecipient, value));
             }
         }
     }
