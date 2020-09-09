@@ -4,37 +4,39 @@ contract FeeToSetter {
     address public factory;
     uint public vestingEnd;
 
-    address public timelock;
-    address public feeToTarget;
+    address public owner;
+    address public feeTo;
 
-    constructor(address factory_, uint vestingEnd_, address timelock_, address feeToTarget_) public {
+    constructor(address factory_, uint vestingEnd_, address owner_, address feeTo_) public {
         require(vestingEnd_ > block.timestamp, 'FeeToSetter::constructor: vesting must end after deployment');
         factory = factory_;
         vestingEnd = vestingEnd_;
-        timelock = timelock_;
-        feeToTarget = feeToTarget_;
+        owner = owner_;
+        feeTo = feeTo_;
     }
 
-    // allows timelock to change itself at any time
-    function setTimelock(address timelock_) public {
-        require(msg.sender == timelock, 'FeeToSetter::setTimelock: not allowed');
-        timelock = timelock_;
+    // allows owner to change itself at any time
+    function setOwner(address owner_) public {
+        require(msg.sender == owner, 'FeeToSetter::setOwner: not allowed');
+        owner = owner_;
     }
 
-    // allows timelock to set the address that feeTo will be set to if fees are turned on at any time
-    function setFeeToTarget(address feeToTarget_) public {
-        require(msg.sender == timelock, 'FeeToSetter::setFeeToTarget: not allowed');
-        feeToTarget = feeToTarget_;
+    // allows owner to change feeToSetter after vesting
+    function setFeeToSetter(address feeToSetter_) public {
+        require(block.timestamp >= vestingEnd, 'FeeToSetter::setFeeToSetter: not time yet');
+        require(msg.sender == owner, 'FeeToSetter::setFeeToSetter: not allowed');
+        IUniswapV2Factory(factory).setFeeToSetter(feeToSetter_);
     }
 
-    // allows timelock to turn fees on/off after vesting
+    // allows owner to turn fees on/off after vesting
     function toggleFees(bool on) public {
         require(block.timestamp >= vestingEnd, 'FeeToSetter::toggleFees: not time yet');
-        require(msg.sender == timelock, 'FeeToSetter::toggleFees: not allowed');
-        IUniswapV2Factory(factory).setFeeTo(on ? feeToTarget : address(0));
+        require(msg.sender == owner, 'FeeToSetter::toggleFees: not allowed');
+        IUniswapV2Factory(factory).setFeeTo(on ? feeTo : address(0));
     }
 }
 
 interface IUniswapV2Factory {
+    function setFeeToSetter(address) external;
     function setFeeTo(address) external;
 }
