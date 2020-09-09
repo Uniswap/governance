@@ -45,14 +45,17 @@ contract FeeToSetter {
     function updateTokenAllowState(address token, bool allowed) public {
         require(msg.sender == timelock, 'FeeToSetter::updateAllow: not allowed');
         TokenAllowState storage tokenAllowState = tokenAllowStates[token];
-        tokenAllowState.allowed = allowed;
-        // this condition will only be true on the first call to this function (regardless of the value of allowed)
-        // by effectively initializing disallowCount to 1,
-        // we force renounce to be called for all pairs including newly allowed token
-        if (tokenAllowState.disallowCount == 0) {
-            tokenAllowState.disallowCount = 1;
-        } else if (allowed == false) {
-            tokenAllowState.disallowCount += 1;
+        // if allowed is not changing, the function is a no-op
+        if (allowed != tokenAllowState.allowed) {
+            tokenAllowState.allowed = allowed;
+            // this condition will only be true on the first call to this function (regardless of the value of allowed)
+            // by effectively initializing disallowCount to 1,
+            // we force renounce to be called for all pairs including newly allowed token
+            if (tokenAllowState.disallowCount == 0) {
+                tokenAllowState.disallowCount = 1;
+            } else if (allowed == false) {
+                tokenAllowState.disallowCount += 1;
+            }
         }
     }
 
