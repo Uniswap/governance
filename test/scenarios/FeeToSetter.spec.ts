@@ -68,7 +68,7 @@ describe('scenario:FeeToSetter', () => {
     )
   })
 
-  it('setFeeToSetter:fail', async () => {
+  it('setFeeToSetter', async () => {
     await mineBlock(provider, vestingEnd)
     await feeToSetter.setFeeToSetter(other.address)
   })
