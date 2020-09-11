@@ -188,7 +188,7 @@ contract Uni {
 
         allowances[owner][spender] = amount;
 
-        emit Approval(msg.sender, spender, amount);
+        emit Approval(owner, spender, amount);
     }
 
     /**
