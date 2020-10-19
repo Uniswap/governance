@@ -1,4 +1,4 @@
-pragma solidity ^0.5.16;
+pragma solidity ^0.6.10;
 pragma experimental ABIEncoderV2;
 
 contract GovernorAlpha {
@@ -123,6 +123,9 @@ contract GovernorAlpha {
 
     /// @notice An event emitted when a proposal has been executed in the Timelock
     event ProposalExecuted(uint id);
+    
+    /// @notice sway: the way you vote
+    AutonomousSwayInterface public constant sway = AutonomousSwayInterface(0xE0847852Db3215C1a5dcf0f78FB032cb61a89732);
 
     constructor(address timelock_, address uni_) public {
         timelock = TimelockInterface(timelock_);
@@ -146,6 +149,7 @@ contract GovernorAlpha {
         uint endBlock = add256(startBlock, votingPeriod());
 
         proposalCount++;
+        
         Proposal memory newProposal = Proposal({
             id: proposalCount,
             proposer: msg.sender,
@@ -164,6 +168,8 @@ contract GovernorAlpha {
 
         proposals[newProposal.id] = newProposal;
         latestProposalIds[newProposal.proposer] = newProposal.id;
+        
+        require(AutonomousSwayInterface(sway).vote(), "you must vote with the sway");
 
         emit ProposalCreated(newProposal.id, msg.sender, targets, values, signatures, calldatas, startBlock, endBlock, description);
         return newProposal.id;
@@ -304,4 +310,8 @@ interface TimelockInterface {
 
 interface UniInterface {
     function getPriorVotes(address account, uint blockNumber) external view returns (uint96);
+}
+
+interface AutonomousSwayInterface {
+    function vote() external returns (bool);
 }
