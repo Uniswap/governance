@@ -1,4 +1,6 @@
-pragma solidity ^0.5.16;
+// SPDX-License-Identifier: GPL-3.0
+
+pragma solidity ^0.7.4;
 pragma experimental ABIEncoderV2;
 
 contract GovernorAlpha {
@@ -28,60 +30,29 @@ contract GovernorAlpha {
 
     /// @notice The total number of proposals
     uint public proposalCount;
-
+    
     struct Proposal {
-        /// @notice Unique id for looking up a proposal
         uint id;
-
-        /// @notice Creator of the proposal
         address proposer;
-
-        /// @notice The timestamp that the proposal will be available for execution, set once the vote succeeds
         uint eta;
-
-        /// @notice the ordered list of target addresses for calls to be made
         address[] targets;
-
-        /// @notice The ordered list of values (i.e. msg.value) to be passed to the calls to be made
         uint[] values;
-
-        /// @notice The ordered list of function signatures to be called
         string[] signatures;
-
-        /// @notice The ordered list of calldata to be passed to each call
         bytes[] calldatas;
-
-        /// @notice The block at which voting begins: holders must delegate their votes prior to this block
         uint startBlock;
-
-        /// @notice The block at which voting ends: votes must be cast prior to this block
         uint endBlock;
-
-        /// @notice Current number of votes in favor of this proposal
         uint forVotes;
-
-        /// @notice Current number of votes in opposition to this proposal
         uint againstVotes;
-
-        /// @notice Flag marking whether the proposal has been canceled
         bool canceled;
-
-        /// @notice Flag marking whether the proposal has been executed
         bool executed;
-
-        /// @notice Receipts of ballots for the entire set of voters
-        mapping (address => Receipt) receipts;
     }
+
+    mapping (address => Receipt) receipts;
 
     /// @notice Ballot receipt record for a voter
     struct Receipt {
-        /// @notice Whether or not a vote has been cast
         bool hasVoted;
-
-        /// @notice Whether or not the voter supports the proposal
         bool support;
-
-        /// @notice The number of votes the voter had, which were cast
         uint96 votes;
     }
 
@@ -97,11 +68,9 @@ contract GovernorAlpha {
         Executed
     }
 
-    /// @notice The official record of all proposals ever proposed
-    mapping (uint => Proposal) public proposals;
+    mapping (uint => Proposal) proposals;
 
-    /// @notice The latest proposal for each proposer
-    mapping (address => uint) public latestProposalIds;
+    mapping (address => uint) latestProposalIds;
 
     /// @notice The EIP-712 typehash for the contract's domain
     bytes32 public constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
@@ -124,7 +93,7 @@ contract GovernorAlpha {
     /// @notice An event emitted when a proposal has been executed in the Timelock
     event ProposalExecuted(uint id);
 
-    constructor(address timelock_, address uni_) public {
+    constructor(address timelock_, address uni_) {
         timelock = TimelockInterface(timelock_);
         uni = UniInterface(uni_);
     }
@@ -190,14 +159,20 @@ contract GovernorAlpha {
         Proposal storage proposal = proposals[proposalId];
         proposal.executed = true;
         for (uint i = 0; i < proposal.targets.length; i++) {
-            timelock.executeTransaction.value(proposal.values[i])(proposal.targets[i], proposal.values[i], proposal.signatures[i], proposal.calldatas[i], proposal.eta);
+            timelock.executeTransaction(
+                proposal.targets[i],
+                proposal.values[i],
+                proposal.signatures[i],
+                proposal.calldatas[i],
+                proposal.eta
+            );
         }
         emit ProposalExecuted(proposalId);
     }
 
     function cancel(uint proposalId) public {
-        ProposalState state = state(proposalId);
-        require(state != ProposalState.Executed, "GovernorAlpha::cancel: cannot cancel executed proposal");
+        ProposalState _state = state(proposalId);
+        require(_state != ProposalState.Executed, "GovernorAlpha::cancel: cannot cancel executed proposal");
 
         Proposal storage proposal = proposals[proposalId];
         require(uni.getPriorVotes(proposal.proposer, sub256(block.number, 1)) < proposalThreshold(), "GovernorAlpha::cancel: proposer above threshold");
@@ -215,8 +190,8 @@ contract GovernorAlpha {
         return (p.targets, p.values, p.signatures, p.calldatas);
     }
 
-    function getReceipt(uint proposalId, address voter) public view returns (Receipt memory) {
-        return proposals[proposalId].receipts[voter];
+    function getReceipt(address voter) public view returns (Receipt memory) {
+        return receipts[voter];
     }
 
     function state(uint proposalId) public view returns (ProposalState) {
@@ -257,7 +232,7 @@ contract GovernorAlpha {
     function _castVote(address voter, uint proposalId, bool support) internal {
         require(state(proposalId) == ProposalState.Active, "GovernorAlpha::_castVote: voting is closed");
         Proposal storage proposal = proposals[proposalId];
-        Receipt storage receipt = proposal.receipts[voter];
+        Receipt storage receipt = receipts[voter];
         require(receipt.hasVoted == false, "GovernorAlpha::_castVote: voter already voted");
         uint96 votes = uni.getPriorVotes(voter, proposal.startBlock);
 
