@@ -50,6 +50,7 @@ contract FeeTo {
     }
 
     function updateTokenAllowStates(address[] memory tokens, bool allowed) public {
+        require(msg.sender == owner, 'FeeTo::updateTokenAllowStates: not allowed');
         for (uint i; i < tokens.length; i++) {
             updateTokenAllowState(tokens[i], allowed);
         }
