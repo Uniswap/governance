@@ -9,24 +9,46 @@
   ],
   "scripts": {
     "precompile": "rimraf ./build/",
+    "build": "hardhat compile",
     "compile": "waffle",
     "pretest": "yarn compile",
     "test": "mocha",
     "lint": "prettier ./test/**/*.ts --check",
-    "prepublishOnly": "yarn test"
+    "prepublishOnly": "yarn test",
+    "mainnet:deploy-vester": "env-cmd -f mainnet.env hardhat run --network mainnet scripts/deploy-vester.ts",
+    "sepolia:deploy-vester": "env-cmd -f sepolia.env hardhat run --network sepolia scripts/deploy-vester.ts"
+
   },
   "devDependencies": {
+    "@ethersproject/experimental": "^5.7.0",
+    "@nomicfoundation/hardhat-chai-matchers": "^2.0.0",
+    "@nomicfoundation/hardhat-ignition": "^0.15.5",
+    "@nomicfoundation/hardhat-ignition-ethers": "^0.15.0",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.0",
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@nomicfoundation/hardhat-verify": "^2.0.0",
+    "@nomicfoundation/ignition-core": "^0.15.5",
+    "@nomiclabs/hardhat-ethers": "^2.2.3",
+    "@typechain/ethers-v6": "^0.5.0",
+    "@typechain/hardhat": "^9.0.0",
     "@types/chai": "^4.2.12",
     "@types/mocha": "^8.0.3",
     "@uniswap/v2-core": "^1.0.1",
     "chai": "^4.2.0",
+    "env-cmd": "^10.1.0",
     "ethereum-waffle": "^3.1.0",
     "ethereumjs-util": "^7.0.4",
+    "ethers": "^5.0.0",
+    "hardhat": "^2.22.6",
+    "hardhat-abi-exporter": "^2.10.1",
+    "hardhat-gas-reporter": "^1.0.8",
     "mocha": "^8.1.3",
     "prettier": "^2.1.1",
     "rimraf": "^3.0.2",
     "solc": "0.5.16",
+    "solidity-coverage": "^0.8.1",
     "ts-node": "^9.0.0",
+    "typechain": "^8.3.0",
     "typescript": "^4.0.2"
   }
 }

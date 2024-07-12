@@ -1,0 +1,80 @@
+name: "[sepolia-manual]: Deploy Vesting Contracts"
+on:
+  workflow_dispatch:
+    inputs:
+      tokenAddress:
+        description: "Term Token Address"
+        required: true
+      vestRecipients:
+        description: "Vesting Recipients"
+        required: true
+      vestAmounts:
+        description: "Vesting Amounts"
+        required: true
+      vestStarts:
+        description: "Vesting Starts"
+        required: true
+      vestCliffs:
+        description: "Vesting Cliffs"
+        required: true
+      vestEnds: 
+        description: "Vesting Ends"
+        required: true
+
+jobs:
+  deploy-config:
+    runs-on: ubuntu-latest
+    environment:
+      name: sepolia
+      url: https://term-finance.github.io/vesting-contract/
+    steps:
+      - run: |
+          echo "SEPOLIA_RPC=\"${{ secrets.sepolia_RPC }}\"" >> sepolia.env
+          echo "DEPLOYER_WALLET=\"${{ secrets.DEPLOYER_WALLET }}\"" >> sepolia.env
+          echo "TERM_TOKEN=\"${{ github.event.inputs.tokenAddress }}\"" >> sepolia.env
+          echo "VEST_RECIPIENTS=\"${{ github.event.inputs.vestRecipients }}\"" >> sepolia.env
+          echo "VEST_AMOUNTS=\"${{ github.event.inputs.vestAmounts }}\"" >> sepolia.env
+          echo "VEST_STARTS=\"${{ github.event.inputs.VEST_vestStartsSTART }}\"" >> sepolia.env
+          echo "VEST_CLIFFS=\"${{ github.event.inputs.vestCliffs }}\"" >> sepolia.env
+          echo "VEST_ENDS=\"${{ github.event.inputs.vestEnds }}\"" >> sepolia.env
+
+      - uses: actions/upload-artifact@v4.3.4
+        with:
+          name: deploy-sepolia.env
+          path: sepolia.env
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: sepolia
+      url: https://term-finance.github.io/vesting-contract/
+    needs: deploy-config
+
+    steps:
+      - uses: actions/checkout@master
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "18.17"
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - run: yarn build
+      - uses: actions/download-artifact@v4.1.8
+        with:
+          name: deploy-sepolia.env
+          path: /tmp/deploy-sepolia.env
+      - run: mv /tmp/deploy-sepolia.env/sepolia.env sepolia.env
+      - run: |
+          yarn deploy:sepolia-deploy-vester
+          echo "Deployed contract using:" >> $GITHUB_STEP_SUMMARY
+          cat "sepolia.env" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Deployed contract:" >> $GITHUB_STEP_SUMMARY
+        env:
+          OUTPUT_DEPLOY_ENV: term-deploy.env
+      - uses: actions/upload-artifact@v4.3.4
+        with:
+          name: abis
+          path: abi/
+      - uses: actions/upload-artifact@v4.3.4
+        with:
+          name: deployed-sepolia.env
+          path: term-deploy.env
